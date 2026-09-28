@@ -66,7 +66,10 @@ Full details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system design
 
 ## Data
 
-Development uses the publicly available, de-identified **Indiana University chest X-ray report collection (Open-i)**. The data is **not** included in this repository. Download it from its original source and follow its terms of use.
+Development uses the de-identified **Indiana University chest X-ray report collection**, distributed by the National Library of Medicine through [Open-i](https://openi.nlm.nih.gov/faq) under the [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) licence.
+
+- The reports, and any labels that quote report text, are **not** redistributed in this repository. Scripts download the data from its original source.
+- Data attribution: National Library of Medicine, National Institutes of Health, Bethesda, MD, USA.
 
 ## Disclaimer
 
