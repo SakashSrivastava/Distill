@@ -95,7 +95,7 @@ Each model output is checked in three steps, from cheapest to most expensive:
 
 ### 5.3 Using an AI to help grade, carefully
 
-Sometimes code cannot tell whether two answers match. Is "enlarged heart" the same as "cardiomegaly"? For these cases a large AI model acts as a **judge**.
+Sometimes code cannot tell whether two answers match. Is "enlarged heart" the same as "cardiomegaly"? For these cases a large AI model acts as a **judge**. It is deliberately a different model from the one that created the training labels, because AI judges tend to favour answers written in their own style.
 
 But a judge is itself an AI and can be wrong, so it is tested before it is trusted. The project owner hand-grades a batch of cases, the judge grades the same batch, and the two are compared.
 
@@ -119,7 +119,7 @@ An average can hide a weakness. A model might be excellent on common findings an
 
 ### 6.1 Borrowing the big model's knowledge (distillation)
 
-Hand-labelling thousands of reports would take far too long. Instead, the large AI model labels the training reports. This is called **knowledge distillation**: a big "teacher" model's knowledge is passed to a small "student" model through the examples it produces. It is also where the project's name comes from.
+Hand-labelling thousands of reports would take far too long. Instead, a large AI model labels the training reports. The project uses an **open-weight** model for this, one whose makers publish it for anyone to download and use under a permissive licence. That matters for two reasons: the terms of many commercial AI services forbid using their outputs to train other models, and using open models means anyone can rerun the whole project without paying anything. This is called **knowledge distillation**: a big "teacher" model's knowledge is passed to a small "student" model through the examples it produces. It is also where the project's name comes from.
 
 The teacher makes mistakes too, so its labels are run through the same graders from Section 5.2. Labels with invalid format or evidence not found in the report are thrown away before the student ever sees them.
 
@@ -157,7 +157,7 @@ A known danger here is **reward hacking**: the model finding a cheap trick to sc
 
 ## 8. Shipping it
 
-The final model is compressed (**quantized**) so it uses less memory and runs faster, then served locally. The project reports how fast it runs, how much memory it needs, and what it costs per thousand reports, next to the same figures for the large API model.
+The final model is compressed (**quantized**) so it uses less memory and runs faster, then served locally on an ordinary laptop graphics card with 6 GB of memory. The project reports how fast it runs, how much memory it needs, and what it costs per thousand reports, next to the same figures for the large teacher model.
 
 The end result is a single table: accuracy, hallucination rate, cost and speed for every model, with confidence intervals.
 

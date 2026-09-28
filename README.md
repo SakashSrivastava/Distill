@@ -1,6 +1,6 @@
 # Distill
 
-**Distill a frontier LLM into a small local model that turns free-text radiology reports into structured, evidence-grounded findings, and prove it works with a rigorous evaluation harness.**
+**Distill a large open LLM into a small local model that turns free-text radiology reports into structured, evidence-grounded findings, and prove it works with a rigorous evaluation harness.**
 
 > **Status:** in development. Results below will be filled in as each stage is completed. Nothing in this repository is intended for clinical use.
 
@@ -29,15 +29,16 @@ If an `evidence` string does not appear in the report, the finding was invented.
 ## Why it exists
 
 - **Privacy.** Hospitals often cannot send patient text to external APIs. A 1–3B model runs on a single consumer GPU or a laptop, so the text never leaves the building.
-- **Cost.** A small tuned model serves requests at a fraction of the per-request price of a frontier API.
+- **Cost.** A small tuned model serves requests at a fraction of the per-request price of a large hosted model.
 - **Trust.** "It looked right on five examples" is not evidence. Every claim here is backed by a locked test set, confidence intervals and paired statistical tests.
+- **Reproducible for $0.** Every model used is open-weight, and every step runs on free tiers or a 6 GB laptop GPU, so anyone can rerun the results.
 
 ## How it works
 
-1. **Evaluate first.** A hand-labelled golden test set is built and locked before any training. Every model, including the frontier baseline, is measured by the same harness.
-2. **Distill (SFT).** A frontier model labels the training split. Labels that fail automatic checks are filtered out, and a small open model is fine-tuned on the rest with LoRA.
+1. **Evaluate first.** A hand-labelled golden test set is built and locked before any training. Every model, including the large teacher, is measured by the same harness.
+2. **Distill (SFT).** A large open-weight teacher model (Apache-2.0 licensed) labels the training split. Labels that fail automatic checks are filtered out, and a small open model is fine-tuned on the rest with LoRA.
 3. **Refine (GRPO).** Reinforcement learning with a reward the harness can compute: valid schema, grounded evidence, correct findings.
-4. **Verify.** An LLM judge handles fuzzy matches ("enlarged heart" = "cardiomegaly") and is itself checked against human labels using Cohen's kappa. Regressions are caught in CI with significance tests.
+4. **Verify.** An LLM judge from a different model family than the teacher handles fuzzy matches ("enlarged heart" = "cardiomegaly") and is itself checked against human labels using Cohen's kappa. Regressions are caught in CI with significance tests.
 5. **Ship.** The final model is quantized, served locally and benchmarked for latency and cost.
 
 Full details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system design, and [docs/OVERVIEW.md](docs/OVERVIEW.md) for a plain-language explanation of the whole project.
@@ -47,7 +48,7 @@ Full details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system design
 | Model | Finding F1 (95% CI) | Status accuracy | Ungrounded evidence | Cost / 1k reports | p50 latency |
 |---|---|---|---|---|---|
 | Rule-based baseline | – | – | – | – | – |
-| Frontier API model (few-shot) | – | – | – | – | – |
+| Large open teacher model (few-shot) | – | – | – | – | – |
 | Small base model (prompted) | – | – | – | – | – |
 | + LoRA SFT | – | – | – | – | – |
 | + GRPO | – | – | – | – | – |

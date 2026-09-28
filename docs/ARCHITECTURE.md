@@ -21,7 +21,7 @@ flowchart LR
     subgraph Labels
         TE --> HL[Human labels<br/>golden set]
         DV --> HL
-        TR --> TL[Teacher labels<br/>frontier model]
+        TR --> TL[Teacher labels<br/>large open model]
         TL --> F[Filter with graders]
     end
 
@@ -43,7 +43,7 @@ flowchart LR
     GRPO --> SRV[Quantize and serve]
 ```
 
-There are four pieces, and the harness is the centre of the design. Every model (rule-based baseline, frontier API, base small model, each fine-tuned checkpoint) goes through exactly the same runner, graders and statistics. A result only counts if it came out of the harness.
+There are four pieces, and the harness is the centre of the design. Every model (rule-based baseline, large teacher, base small model, each fine-tuned checkpoint) goes through exactly the same runner, graders and statistics. A result only counts if it came out of the harness.
 
 ---
 
@@ -96,7 +96,7 @@ flowchart LR
 ### 4.1 Model adapters
 One interface, `predict(report) -> output + metadata`, with implementations for:
 - a rule-based baseline (keyword and negation patterns),
-- API models,
+- hosted open models behind an OpenAI-compatible API (free tiers),
 - local Hugging Face / quantized models.
 
 Each call records latency, token counts and estimated cost alongside the output.
@@ -112,7 +112,7 @@ Cheapest and most exact first:
 3. **Field matching.** Predicted findings are matched to gold findings, then precision, recall and F1 are computed per field. Exact and synonym-table matches are handled in code. Only leftover ambiguous pairs go to the LLM judge.
 
 ### 4.4 LLM judge
-Used narrowly, as a semantic matcher for finding terms. The judge is only trusted after it is checked:
+Used narrowly, as a semantic matcher for finding terms. The judge comes from a different model family than the teacher, because judges tend to favour outputs that resemble their own. It is only trusted after it is checked:
 - agreement with human labels is measured with **Cohen's kappa**, not raw agreement, because raw agreement is inflated by chance when one label dominates;
 - the annotator's own re-labelling consistency is measured the same way, giving a ceiling for what the judge can reach;
 - position and verbosity biases are tested explicitly.
@@ -127,7 +127,7 @@ Used narrowly, as a semantic matcher for finding terms. The judge is only truste
 ## 5. Training
 
 ### 5.1 Distilled training data
-The frontier model labels the train split with a few-shot prompt. The same graders used for evaluation then filter those labels: invalid or ungrounded outputs are dropped. This keeps teacher mistakes out of the student's training data. The trade-off is that the student learns the teacher's style, which caps it near teacher quality. The GRPO stage exists partly to push past that.
+A large open-weight teacher model with a permissive (Apache-2.0) licence labels the train split with a few-shot prompt. An open teacher keeps the provenance of the released model clean, since many hosted-model terms restrict using outputs to train other models, and it keeps the whole pipeline reproducible on free tiers. Labelling runs within free-tier daily quotas, or on free cloud GPUs when more data is needed. The same graders used for evaluation then filter those labels: invalid or ungrounded outputs are dropped. This keeps teacher mistakes out of the student's training data. The trade-off is that the student learns the teacher's style, which caps it near teacher quality. The GRPO stage exists partly to push past that.
 
 ### 5.2 LoRA SFT
 - Base: a small open instruct model (0.5–3B).
@@ -155,7 +155,7 @@ Reward hacking is guarded against deliberately. For example, a model could avoid
 
 ## 7. Serving
 
-The final checkpoint is merged, quantized and served locally. The benchmark reports latency percentiles, throughput and memory use on consumer hardware, next to the per-request cost of the frontier API.
+The final checkpoint is merged, quantized and served locally. The benchmark reports latency percentiles, throughput and memory use on consumer hardware (a 6 GB laptop GPU), next to the per-request cost of serving the large teacher model.
 
 ---
 
@@ -203,3 +203,5 @@ Distill/
 | Paired significance tests in CI | Small score changes on a few hundred examples are often noise. Blocking PRs on noise trains people to ignore the gate. |
 | One schema definition shared everywhere | Graders, rewards and serving cannot disagree about what a valid output is. |
 | Small local model as the target | Patient text stays on local hardware, and per-request cost drops sharply. |
+| Open-weight, permissively licensed teacher | Clean provenance for the released model, and the full pipeline reproducible at $0. |
+| Judge from a different model family than the teacher | Avoids the judge favouring outputs in its own style. |
